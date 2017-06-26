@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>ロードマップ生成くん</title>
+	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="css/bootstrap-datepicker.min.css">
+	<style>
+		body {
+			padding-top: 60px;
+		}
+	</style>
+</head>
+<body>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.min.js"></script>
+<script type="text/javascript" src="js/roadmap.min.js"></script>
+<script type="text/javascript" src="js/bootstrap-datepicker.min.js"></script>
+<script type="text/javascript" src="js/bootstrap-datepicker.ja.min.js"></script>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+	<div class="container">
+		<div class="navbar-header">
+			<a class="navbar-brand" href="#">ロードマップ生成くん</a>
+		</div>
+	</div>
+</nav>
+<div class="container">
+	<div class="form-group">
+		<ul class="nav nav-tabs">
+			<li class="active"><a href="#tab1" data-toggle="tab">フォーム入力</a></li>
+			<li><a href="#tab2" data-toggle="tab">roadmap.js形式から入力</a></li>
+		</ul>
+		<!-- / タブ-->
+		<div id="myTabContent" class="tab-content">
+			<div class="tab-pane fade in active" id="tab1">
+				<div class="form-group">
+					<label for="taskList">タスク:</label>
+					<table id="taskList" class="table table-striped">
+						<thead>
+						<tr>
+							<th>担当者</th>
+							<th>タスク</th>
+							<th>サブタスク</th>
+							<th>期間</th>
+							<th></th>
+						</tr>
+						</thead>
+						<tbody>
+						<tr class="tasks">
+							<td><input class="input-sm form-control" type="text"></td>
+							<td><input class="input-sm form-control" type="text"></td>
+							<td><input class="input-sm form-control" type="text"></td>
+							<td>
+								<div class="input-daterange input-group">
+									<input type="text" class="input-sm form-control" name="start"/>
+									<span class="input-group-addon">～</span>
+									<input type="text" class="input-sm form-control" name="end"/>
+								</div>
+							</td>
+							<td><a class="taskDeleteBtn" href="javascript:void(0)" role="tab" title="削除">
+								<span class="input-sm glyphicon glyphicon-ban-circle"></span>
+							</a></td>
+						</tr>
+						</tbody>
+					</table>
+					<p class="text-right">
+						<a id="addTaskBtn" href="javascript:void(0)" role="tab" title="タスクを追加">
+							<span class="glyphicon glyphicon-plus"></span>
+							<span>タスクを追加</span>
+						</a>
+					</p>
+				</div>
+				<div class="form-group">
+					<label for="viewTypeSelector">表示方法:</label>
+					<select class="form-control" id="viewTypeSelector">
+						<option value="people">担当者別表示</option>
+						<option value="task">タスク別表示</option>
+						<option value="all">両方表示</option>
+					</select>
+				</div>
+				<div class="row">
+					<div class="col-sm-6">
+						<button class="btn btn-default btn-block btn-success btn-lg" id="drawBtn">
+							<span class="glyphicon glyphicon-ok"></span>
+							ロードマップ表示
+						</button>
+					</div>
+					<div class="col-sm-6">
+						<button class="btn btn-default btn-block btn-primary btn-lg" id="outputBtn">
+							<span class="glyphicon glyphicon-ok"></span>
+							HTMLコード表示
+						</button>
+					</div>
+				</div>
+			</div>
+			<div class="tab-pane fade" id="tab2">
+				<div class="form-group">
+					<label for="inputText">roadmap.js形式:</label>
+					<textarea class="form-control" rows="10" id="inputText">
+タスク名1,サブタスク1
+2017-05-01 > 2017-05-30
+[01]ユーザ1
+
+タスク名1,サブタスク2
+2017-06-01 > 2017-06-15
+[02]ユーザ2
+
+タスク名2
+2017-06-01 > 2017-08-30
+[01]ユーザ1
+
+タスク名3
+2017-08-01 > 2017-09-30
+[03]ユーザ3
+</textarea>
+				</div>
+				<div class="form-group">
+					<button class="btn btn-default btn-block btn-success btn-lg" id="parseBtn">
+						<span class="glyphicon glyphicon-ok"></span>
+						タスクリストに変換（現在のタスクリストの内容は全て破棄されます）
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<textarea style="display: none" rows="1" id="tempText"></textarea>
+	<div style="margin-top: 20px" class="form-group" id="roadmapView">
+		<div class="roadmap" id="roadmap" data-graph-type="people">
+		</div>
+	</div>
+</div>
+</div>
+<div class="modal fade" id="modal">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+						aria-hidden="true">&times;</span></button>
+				<h4><label for="resultHtmlCode">下記をコピペしてください</label></h4>
+			</div>
+			<div class="modal-body">
+				<textarea class="form-control" rows="10" id="resultHtmlCode"></textarea>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">閉じる</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+  (function ($) {
+    var $modal = $('#modal');
+    var $roadmap = $('#roadmap');
+    var $resultHtmlCode = $('#resultHtmlCode');
+    var $inputText = $('#inputText');
+    var $tempText = $('#tempText');
+    var $viewTypeSelector = $('#viewTypeSelector');
+
+    function addTaskInput(task, subTask, start, end, user) {
+      var $tr = $('#taskList tr');
+      $tr.eq($tr.length - 1).after(generateTr(task, subTask, start, end, user));
+    }
+
+    function generateTr(task, subTask, start, end, user) {
+      return '<tr class="tasks"><td><input value="' + user + '" class="input-sm form-control" type="text"></td>' +
+        '<td><input value="' + task + '" class="input-sm form-control" type="text"></td>' +
+        '<td><input value="' + subTask + '" class="input-sm form-control" type="text"></td>' +
+        '<td><div class="input-daterange input-group">' +
+        '<input value="' + start + '" type="text" class="input-sm form-control" name="start" />' +
+        '<span class="input-group-addon">～</span>' +
+        '<input value="' + end + '" type="text" class="input-sm form-control" name="end" />' +
+        '</div></td>' +
+        '<td><a class="taskDeleteBtn" href="javascript:void(0)" role="tab" title="削除">' +
+        '<span class="input-sm glyphicon glyphicon-ban-circle"></span>' +
+        '</a></td></tr>';
+    }
+
+    function removeTaskInput(deleteBtn) {
+      $(deleteBtn).parents('.tasks').remove();
+    }
+
+    function convertTaskListToHtml() {
+      $tempText.html('');
+      $tasks = $(".tasks");
+      for (var i = 0; i < $tasks.length; i++) {
+        var cells = $tasks.eq(i).children();
+        var person = cells.eq(0).find('input').val();
+        var task = cells.eq(1).find('input').val();
+        var subTask = cells.eq(2).find('input').val();
+        var start = cells.eq(3).find('input').eq(0).val();
+        var end = cells.eq(3).find('input').eq(1).val();
+        if (task === '' && subTask === '') {
+          continue;
+        }
+        $tempText.append(task);
+        if (subTask !== '') {
+          $tempText.append(',' + subTask + "\n");
+        } else {
+          $tempText.append("\n");
+        }
+        $tempText.append(start + " > " + end + "\n");
+        $tempText.append(person + "\n\n");
+      }
+    }
+
+    function parseReoadmapJsCodeToTaskList() {
+      $('.tasks').remove();
+      var taskGroups = $inputText.val().replace(/\n\s+/g, "\n\n").split("\n\n");
+      for (var i = 0; i < taskGroups.length; i++) {
+        if (taskGroups[i] === '') {
+          continue;
+        }
+        var taskGroup = taskGroups[i].split("\n");
+        if (taskGroup.length < 2) {
+          continue;
+        }
+        var taskAndSubTask = taskGroup[0].split(',');
+        var task = taskAndSubTask[0];
+        var subTask = taskAndSubTask[1] ? taskAndSubTask[1] : '';
+        var startAndTo = taskGroup[1].replace(/[^0-9\-\/]+/, " ").split(" ");
+        var start = startAndTo[0];
+        var end = startAndTo[1];
+        for (var j = 2; j < taskGroup.length; j++) {
+          var user = taskGroup[j];
+          if (user === '') {
+            continue;
+          }
+          addTaskInput(task, subTask, start, end, user);
+        }
+      }
+    }
+
+    function drwaRoadmap() {
+      $roadmap.html($tempText.val());
+      $roadmap.attr('data-graph-type', $viewTypeSelector.val());
+      window.Roadmap.reset();
+      window.Roadmap.parse();
+    }
+
+    function viewHtmlCode() {
+      $roadmap.html($tempText.val());
+      $roadmap.attr('data-graph-type', $viewTypeSelector.val());
+      var code = '<div class="roadmap" data-graph-type="' + $viewTypeSelector.val() + '">';
+      code += "\n";
+      code += $roadmap.html().replace(/\n\n/g, "\n\n\n") + "\n";
+      code += "</div>\n";
+      $resultHtmlCode.html(code);
+      $modal.modal('show');
+      window.Roadmap.reset();
+      window.Roadmap.parse();
+    }
+
+    $('.input-daterange').datepicker({
+      language: 'ja',
+      format: "yyyy-mm-dd",
+      autoclose: true
+    });
+    $('#drawBtn').click(function () {
+      convertTaskListToHtml();
+      drwaRoadmap();
+    });
+    $('#outputBtn').click(function () {
+      viewHtmlCode();
+    });
+    $('#addTaskBtn').click(function () {
+      addTaskInput('', '', '', '', '');
+      $('.input-daterange').datepicker({
+        language: 'ja',
+        format: "yyyy-mm-dd",
+        autoclose: true
+      });
+      $('.taskDeleteBtn').off('click');
+      $('.taskDeleteBtn').on('click', function (e) {
+        removeTaskInput(e.target);
+      });
+    });
+    $('.taskDeleteBtn').on('click', function (e) {
+      removeTaskInput(e.target);
+    });
+    $('#parseBtn').click(function () {
+      parseReoadmapJsCodeToTaskList();
+      $('.input-daterange').datepicker({
+        language: 'ja',
+        format: "yyyy-mm-dd",
+        autoclose: true
+      });
+      $('.taskDeleteBtn').off('click');
+      $('.taskDeleteBtn').on('click', function (e) {
+        removeTaskInput(e.target);
+      });
+      convertTaskListToHtml();
+      drwaRoadmap();
+    });
+  })(jQuery);
+</script>
+</body>
+</html>
