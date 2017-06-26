@@ -16,4 +16,6 @@ roadmap.js を用いてロードマップをプレビューしながら生成す
 
 ## 利用ライブラリ
 * [roadmap.js](https://github.com/florentsolt/roadmap.js)
+  * [License](https://github.com/florentsolt/roadmap.js/blob/master/LICENSE)
 * [bootstrap-datepicker](https://github.com/uxsolutions/bootstrap-datepicker)
+  * [License](https://github.com/uxsolutions/bootstrap-datepicker/blob/master/LICENSE)
